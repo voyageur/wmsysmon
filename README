@@ -1,0 +1,29 @@
+You have downloaded wmsysmon, a small dock application for use with
+WindowMaker (www.windowmaker.org) to show system information on interrupt
+activity, memory use, swap use, and IO.  wmsysmon was originally written by
+Dave Clark, I saw room for improvement in wmsysmon and sent some updates in
+to Dave Clark, after nearly a month went by with no response I decided to
+takeover development.  Dave Clark is OK with this, it appears he is
+too overworked to keep up with everything, if you are management over Dave
+Clark give him a break :).  This program is licensed under the GNU GPL, see
+file COPYING.
+
+Simply enter the 'src' directory and type 'make' to build wmsysmon, if you are
+using a SMP x86 machine or an alpha machine you may want to edit the Makefile
+and uncomment -DHI_INTS before building, this enables monitoring the 24
+interrupts available on such machines.  After building successfully, execute
+'make install' to install the binary into /usr/local/bin, root will be required
+to write the binary in /usr/local/bin, but it is not required to install the
+binary in /usr/local/bin to use wmsysmon, it may be run from anywhere in
+the filesystem, but on a multi-user system it is preferred to have it available
+for everyone to use, hence /usr/local/bin.
+
+For information on running wmsysmon, execute 'wmsysmon -h' after building (and
+installing) using the above instructions.
+
+Cheers.
+
+- Vito Caputo
+  swivel@gnugeneration.com
+  GNU Generation
+  www.gnugeneration.com

@@ -1,0 +1,104 @@
+-- end --
+- Aug 4 2002 - Vito Caputo (swivel@gnugeneration.com) -
+	* a few changes, i can't recall, the interrupt meters have been refined
+	  a bit, main event loop changed but theres a slight bug with the
+	  event loop timing, the timeout doesnt get updated dynamically if the
+	  main select() exits before the timeout...  you can see this by say
+	  dragging an icon over wmsysmon a bunch, the meters will all shrink
+	  if interrupts are ocurring, because the time between polls of
+	  the interrupt counts is shorter than before, causing it to think
+	  theres less interrupts, when in fact, there was less time for them
+	  to occur, minor bug.
+
+- Dec 24 2001 - Vito Caputo (swivel@gnugeneration.com) -
+	* minor cleanups, in wmgeneral.c added static int where was just static.
+	  (int is assumed but caused warning in -Wall), also removed some
+	  unused variables...
+
+- Dec 23 2001 - Vito Caputo (swivel@gnugeneration.com) -
+	* removed profiling instrumentation, it's no longer needed.
+	* updated meters, the behaviour is changed a bit, interrupts that
+	  never occur dont get the _ level so you can see which are inactive
+	  in the system, and they should be more responsive.
+	* removed usleep() usage and switched to poll() with a timeout on the
+	  X connection fd, more efficient and allows expose events to be handled
+	  with less latency.
+
+- Jul 11 2000 - Vito Caputo (swivel@gnugeneration.com) -
+	* eliminated the memcpy() used for copying interrupt statistics into
+	  backups for comparison in next iteration, now simply swaps pointers.
+	* made new profile, organized existing profiles.
+
+- Jun 29 2000 - Vito Caputo (swivel@gnugeneration.com) -
+	* added profiling instrumentation to code for TAU
+	* optimized DrawMem() routine, which profiling revealed as being 96%
+	  of the total CPU time used in 0.6.0.
+	* optimized DrawStuff() routine
+	* added simple drawing management code, not quite drawing list but
+	  more efficient in most cases than blitting whole tile.  Anything
+	  more complex will probably outweigh the benefits since we're
+	  dealing with such a small area.
+	* removed some unused routines that were left behind from Dave Clarks
+	  release, and some junk in wmgeneral.c, next release may have no
+	  wmgeneral.c, even though it would be pointless to remove it since
+	  the same code would be sitting in wmsysmon.c, its probably more
+	  tidy as-is.
+	* after extensive profiling, it has been discovered that polling
+	  /proc/meminfo is expensive no matter how you go about parsing it,
+	  linux 2.4 in theory does this faster, but I have changed the meminfo
+	  polling to be a fraction of the refresh rate used, this makes things
+	  alot more CPU (system) friendly. 
+	* fix to drawing management code, was not adding all dirty's properly
+	* added small test program for benchmarking /proc/meminfo
+	* line #'s are calculated at startup now for /proc/meminfo and
+	  /proc/stat entries we use, so no strchr()'s every iteration, and order
+	  changes in /proc/meminfo and /proc/stat formatting shouldnt break it.
+	* some code cleanup
+	* fix to Makefile, some systems were not finding includes in
+	  /usr/X11R6/include without -I/usr/X11R6/include
+
+- Apr 24 2000 - Vito Caputo (swivel@gnugeneration.com) -
+	* added interrupt meters, i like i like :)
+	* set intterrupt meters to default behavior, added -l to arguements
+	  to set old lights behavior and to help screen.
+	* new feature, 0.6.0 now :)
+
+- Apr 2 2000 - Vito Caputo (swivel@gnugeneration.com) -
+	* fixed some problems with parsing files in /proc, much much faster
+	  now. (toyed with drawing lists and some other things but broke most
+	  of wmsysmon, will be rewriting the stuff in wmgeneral.c eventually)
+
+- Mar 5 2000 - Vito Caputo (swivel@gnugeneration.com) -
+	* fixed typo in HI_INTS version of help (wmsysmon -h) interrupts 0-24
+	  to 0-23
+	* upped version # to 0.5.1
+	* another fix to the lights, Ignacy's fix fixed blinking but broke
+	  optimization (if lights were off they were always refreshed)
+
+- Mar 5 2000 - Ignacy Gawedzki (ouaou@relou.net)
+	* little fix to the lights, which kept blinking.
+
+- Feb 12 2000 - Vito Caputo (swivel@gnugeneration.com) -
+	* created this changelog
+	* reformatted code to my liking
+	* converted c++ style comments (bleh, ick) to C style.
+	* upgraded version # to 0.5
+	* changed link to old non-maintained (dead?) wmsysmon site in usage
+	  to GNU Generation site with maintained wmsysmon.
+	* added the ascii diagram to the usage dialog
+	* removed wmgeneral/ and misc.c and list.c, pointless.
+	* added proper GNU GPL notice to wmsysmon.c
+
+- Jan 25 2000 - Vito Caputo (swivel@gnugeneration.com) -
+	* After sending updates to previous maintainer decided to simply
+	  takeover maintennance of wmsysmon, if anyone objects, tough, get off
+	  your a*s and maintain it yourself, nothings stopping you, behold the
+	  power of the GNU GPL.
+	* optimized uptime refresh to only redraw uptime when changed
+	* optimized swap & mem usage percent bars to only redraw when changed
+	* optimized IO usage percent bar to only redraw when changed
+	* optimized interrupt lites to only redraw when changed
+	* rewrote Makefile, chaged ALPHA_VERSION to HI_INTS (SMP x86 boxes use
+	  this too so its not alpha only)
+
+-- begin --
