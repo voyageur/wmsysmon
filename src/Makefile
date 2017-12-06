@@ -10,7 +10,7 @@ OBJS = wmgeneral.o \
 	cpu_linux.o
 
 $(BIN): $(OBJS)
-	$(CC) $(LDFLAGS) $(OBJS)  $(LIBS) -o $(BIN)
+	$(CC) $(LDFLAGS) $(OBJS) $(LIBS) -o $(BIN)
 
 all: wmsysmon
 

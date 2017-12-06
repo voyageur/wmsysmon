@@ -5,7 +5,7 @@
 	Copyright (C) 2000 Vito Caputo - swivel@gnugeneration.com
 
 	Kernel 2.6 support and CPU load changes made by
-  Michele Noberasco - s4t4n@gentoo.org
+	Michele Noberasco - s4t4n@gentoo.org
 
 	wmsysmon is free software; you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
+#include <sys/utsname.h>
 #include <X11/Xlib.h>
 #include <X11/xpm.h>
 #include <X11/extensions/shape.h>
@@ -101,8 +102,8 @@ int	meter[4][2];
 
 typedef enum
 {
-	IS_2_6 = 0,
-	IS_OTHER
+	NEWER_2_6 = 0,
+	OLDER_2_4
 } kernel_versions;
 kernel_versions kernel_version;
 
@@ -295,7 +296,7 @@ void wmsysmon_routine(int argc, char **argv)
 
 	statfp = fopen("/proc/stat", "r");
 	memfp = fopen("/proc/meminfo", "r");
- 	if (kernel_version == IS_2_6) vmstatfp = fopen("/proc/vmstat", "r");
+	if (kernel_version == NEWER_2_6) vmstatfp = fopen("/proc/vmstat", "r");
  
   
  	/* here we find tags in /proc/stat and note their
@@ -303,7 +304,7 @@ void wmsysmon_routine(int argc, char **argv)
 	 */
 	for(i = 0; fgets(buf, 1024, statfp); i++)
 	{
- 		if (kernel_version == IS_OTHER)
+		if (kernel_version == OLDER_2_4)
  		{
  			if(strstr(buf, "page")) page_l = i;
  			if(strstr(buf, "swap")) swap_l = i;
@@ -509,7 +510,7 @@ void DrawStuff( void )
 
 	statfp = freopen("/proc/stat", "r", statfp);
 
-	if (kernel_version == IS_2_6)
+	if (kernel_version == NEWER_2_6)
 	{
 		static char *pageins_p=NULL;
 		static char *pageouts_p;
@@ -533,7 +534,7 @@ void DrawStuff( void )
 
 	for(i = 0, ents = 0; ents < 5 && fgets(buf, 1024, statfp); i++)
 	{
-		if (kernel_version == IS_OTHER)
+		if (kernel_version == OLDER_2_4)
 		{
 			if(i == page_l)
 			{
@@ -915,17 +916,28 @@ void printversion(void)
 
 kernel_versions Get_Kernel_version(void)
 {
-	FILE *fp = fopen("/proc/version", "r");
-	char buf[512];
+	struct utsname buffer;
+	char *p;
+    long ver[2];
+    int i=0;
 
-	if (!fp) return IS_OTHER;
-	if (!fgets(buf, 512, fp))
-	{
-		fclose(fp);
-		return IS_OTHER;
+    if (uname(&buffer) != 0) {
+		return OLDER_2_4;
+    }
+
+    p = buffer.release;
+    while (*p) {
+        if (isdigit(*p)) {
+            ver[i] = strtol(p, &p, 10);
+            i++;
+			if (i == 2) break;
+        } else {
+            p++;
+        }
+    }
+
+	if (ver[0] >= 3 || (ver[0] == 2 && ver[1] >= 6)) {
+		return NEWER_2_6;
 	}
-	fclose(fp);
-
-	if (strstr(buf, "2.6.")) return IS_2_6;
-	return IS_OTHER;
+	return OLDER_2_4;
 }
