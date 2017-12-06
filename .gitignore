@@ -1,0 +1,8 @@
+# Build output
+src/wmsysmon
+
+# Temp files
+.*.swp
+
+# Object files
+*.o
