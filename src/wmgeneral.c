@@ -162,7 +162,7 @@ void DirtyWindow(int x, int y, unsigned int w, unsigned int h) {
 		wmgen.dirty_w,
 		wmgen.dirty_h);
 #endif
-};
+}
 
 
 void createXBMfromXPM(char *xbm, char **xpm, int sx, int sy) {
