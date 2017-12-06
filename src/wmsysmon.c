@@ -488,8 +488,6 @@ void DrawUptime(void)
 
 void DrawStuff( void )
 {
-/* 	static int	io_last = 0, first = 1; */
-	static int	first = 1;
 #ifdef HI_INTS
 	static int	int_lites[24] =
 		{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -505,10 +503,9 @@ void DrawStuff( void )
 	static long	swapins;
 	static long	swapouts;
 	static long	intdiff;
-	static long	stage;
 	static long	*tints;
 
-	stage = pageins = pageouts = swapins = swapouts = 0;
+	pageins = pageouts = swapins = swapouts = 0;
 
 	statfp = freopen("/proc/stat", "r", statfp);
 
@@ -761,8 +758,6 @@ if (swapouts > last_swapouts && !swapout_lite) {
 last_swapins = swapins;
 last_swapouts = swapouts;
 
-first = 0;
-
 }
 
 
@@ -884,9 +879,9 @@ void usage(void)
 {
 	fprintf(stderr, "\nwmsysmon - http://www.gnugeneration.com\n\n");
 	fprintf(stderr, ".-----------------.\n"
-                  "|[---------------]|  <--- CPU Use %\n"
-                  "|[---------------]|  <--- Memory Use %\n"
-                  "|[---------------]|  <--- Swap Use %\n"
+                  "|[---------------]|  <--- CPU Use %%\n"
+                  "|[---------------]|  <--- Memory Use %%\n"
+                  "|[---------------]|  <--- Swap Use %%\n"
                   "|                 |\n"
                   "|   000:00:00     |  <--- Uptime days:hours:minutes\n"
                   "|                 |\n"
@@ -898,7 +893,7 @@ void usage(void)
                   "| 01234567   WX   |  <--- 0-F are hardware interrupts 0-15\n"
                   "| 89ABCDEF   YZ   |  <--- W,X are Page IN/OUT, Y,Z are Swap IN/OUT\n"
 #endif
-                  "°-----------------°\n");
+                  "'-----------------'\n");
 
 	fprintf(stderr, "usage:\n");
 	fprintf(stderr, "\t-display <display name>\n");

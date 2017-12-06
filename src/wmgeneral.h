@@ -57,6 +57,6 @@ void copyXBMArea(int, int, unsigned int, unsigned int, int, int);
 void setMaskXY(int, int);
 
 void parse_rcfile(const char *, rckeys *);
-inline void DirtyWindow(int, int, unsigned int, unsigned int);
+void DirtyWindow(int, int, unsigned int, unsigned int);
 
 #endif
