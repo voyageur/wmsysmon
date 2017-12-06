@@ -1,22 +1,21 @@
-CC = gcc
-
-LIBDIR += -L/usr/X11R6/lib
-LDFLAGS += -lXpm -lXext -lX11 -lm -s
+LIBS += -lXpm -lXext -lX11 -lm
 #CFLAGS = -g #-DMONDEBUG
-CFLAGS += ${GENTOO_CFLAGS} -W -Wall -pedantic -I/usr/X11R6/include #-DHI_INTS #undefine HI_INTS if your x86 SMP or alpha
+CFLAGS += -W -Wall -pedantic -DHI_INTS #undefine HI_INTS if not on x86 SMP or alpha
+
+PREFIX = /usr
 
 BIN = wmsysmon
-OBJS =	wmgeneral.o \
+OBJS = wmgeneral.o \
 	wmsysmon.o  \
 	cpu_linux.o
 
 $(BIN): $(OBJS)
-	$(CC) -o $(BIN) $(OBJS) $(LIBDIR) $(LDFLAGS)
+	$(CC) $(LDFLAGS) $(OBJS)  $(LIBS) -o $(BIN)
 
 all: wmsysmon
 
 clean:
 	rm -f $(OBJS) $(BIN)
 
-install:
-	install -g root -o root $(BIN) /usr/local/bin
+install: all
+	install -g root -o root $(BIN) $(DESTDIR)$(PREFIX)/bin
