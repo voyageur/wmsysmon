@@ -777,11 +777,12 @@ void DrawMem(void)
 	static int 	mempercent = 0;
 	static int 	swappercent = 0;
 
+#if 0
+	counter--;
 
-/* 	counter--; */
-
-/* 	if(counter >= 0) return; /\* polling /proc/meminfo is EXPENSIVE *\/ */
-/* 	counter = 1500 / update_rate; */
+	if(counter >= 0) return; /* polling /proc/meminfo is EXPENSIVE */
+	counter = 1500 / update_rate;
+#endif
 
 	memfp = freopen("/proc/meminfo", "r", memfp);
 	fread_unlocked (buf, 1024, 1, memfp);
