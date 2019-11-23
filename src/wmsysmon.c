@@ -169,14 +169,14 @@ int main(int argc, char *argv[])
 
 	last_ints = _last_ints;
 	ints = _ints;
-    
+
  	/* some defaults for CPU percentage */
 	cpu_opts.ignore_nice = False;
 	cpu_opts.cpu_number = CPUNUM_NONE;
 	cpu_opts.ignore_procs = 0;
- 
+
  	kernel_version = Get_Kernel_version();
- 
+
  	/* Parse Command Line */
 
 	ProgName = argv[0];
@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
  	for (i = 1; i < argc; i++)
  	{
 		char *arg = argv[i];
-  
+
  		if (*arg == '-')
  		{
  			switch (arg[1])
@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
  					cpu_opts.ignore_proc_list[cpu_opts.ignore_procs] = argv[i];
  					cpu_opts.ignore_procs++;
  					break;
- 
+
  				default:
  					usage();
  					exit(0);
@@ -250,11 +250,11 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
-  
+
  	/* Init CPU percentage stuff */
  	/* NOT NEEDED ON LINUX */
  	/* cpu_init(); */
- 
+
 
 	wmsysmon_routine(argc, argv);
 
@@ -270,10 +270,10 @@ void wmsysmon_routine(int argc, char **argv)
 	FILE		*fp;
 	int		xfd;
 	struct pollfd	pfd;
-    
+
 
 	createXBMfromXPM(wmsysmon_mask_bits, wmsysmon_master_xpm, wmsysmon_mask_width, wmsysmon_mask_height);
-    
+
 	xfd = openXwindow(argc, argv, wmsysmon_master_xpm, wmsysmon_mask_bits, wmsysmon_mask_width, wmsysmon_mask_height);
 	if(xfd < 0) exit(1);
 
@@ -285,7 +285,7 @@ void wmsysmon_routine(int argc, char **argv)
 	bzero(&_ints, sizeof(_ints));
 	bzero(&int_peaks, sizeof(int_peaks));
 
-    
+
 	/* init uptime */
 	fp = fopen("/proc/uptime", "r");
 	if (fp) {
@@ -297,8 +297,8 @@ void wmsysmon_routine(int argc, char **argv)
 	statfp = fopen("/proc/stat", "r");
 	memfp = fopen("/proc/meminfo", "r");
 	if (kernel_version == NEWER_2_6) vmstatfp = fopen("/proc/vmstat", "r");
- 
-  
+
+
  	/* here we find tags in /proc/stat and note their
 	 * lines, for faster lookup throughout execution.
 	 */
@@ -311,17 +311,17 @@ void wmsysmon_routine(int argc, char **argv)
  		}
  		if(strstr(buf, "intr")) intr_l = i;
 	}
-  
+
 	while(1)
 	{
 		curtime = time(0);
-  
+
 		DrawCpuPercentage();
 		DrawUptime();
 		DrawStuff();
 		DrawMem();
 		RedrawWindow();
- 
+
 		/* X Events */
 		poll(&pfd, 1, update_rate);
 		while (XPending(display))
@@ -418,7 +418,7 @@ void DrawCpuPercentage(void)
 {
 	int cpupercentage = cpu_get_usage(&cpu_opts);
 	static int oldcpupercentage = -1;
-	
+
 	if (cpupercentage != oldcpupercentage)
 	{
 #ifdef HI_INTS
@@ -438,7 +438,7 @@ void DrawUptime(void)
 	static long	uptime;
 	static int	i;
 
-    
+
 	uptime = curtime - start_uptime + start_time;
 
 	/* blit minutes */
@@ -454,7 +454,7 @@ void DrawUptime(void)
 		BlitString(buf, 45, 37);
 #endif
 	}
-    
+
 	/* blit hours */
 	uptime /=60;
 	i = uptime % 24;
@@ -469,7 +469,7 @@ void DrawUptime(void)
 #endif
 	}
 
-    
+
 	/* blit days */
 	uptime /= 24;
 	i = uptime;
@@ -516,7 +516,7 @@ void DrawStuff( void )
 		static char *pageouts_p;
 		static char *swapins_p;
 		static char *swapouts_p;
- 
+
 		vmstatfp = freopen("/proc/vmstat", "r", vmstatfp);
 		fread_unlocked (buf, 1024, 1, vmstatfp);
 		if (!pageins_p)
@@ -529,7 +529,7 @@ void DrawStuff( void )
 		sscanf(pageins_p,  "%ld", &pageins  );
 		sscanf(pageouts_p, "%ld", &pageouts );
 		sscanf(swapins_p,  "%ld", &swapins  );
-		sscanf(swapouts_p, "%ld", &swapouts );												
+		sscanf(swapouts_p, "%ld", &swapouts );
 	}
 
 	for(i = 0, ents = 0; ents < 5 && fgets(buf, 1024, statfp); i++)
@@ -796,7 +796,7 @@ void DrawMem(void)
 		p_swap_total  = strstr(buf, "SwapTotal:") + 13;
 		p_swap_free   = strstr(buf, "SwapFree:" ) + 13;
 	}
-	
+
 	sscanf(p_mem_tot,     "%ld", &mem_total  );
 	sscanf(p_mem_free,    "%ld", &mem_free   );
 	sscanf(p_mem_buffers, "%ld", &mem_buffers);
@@ -847,7 +847,7 @@ void BlitString(char *name, int x, int y)
 	k = x;
 	for (i=0; name[i]; i++) {
 
-		c = toupper(name[i]); 
+		c = toupper(name[i]);
 		if (c >= 'A' && c <= 'Z') {
 			c -= 'A';
 			copyXPMArea(c * 6, 74, 6, 8, k, y);
@@ -874,7 +874,7 @@ void BlitNum(int num, int x, int y)
 	BlitString(buf, newx, y);
 
 }
-    
+
 
 void usage(void)
 {
