@@ -512,24 +512,59 @@ void DrawStuff( void )
 
 	if (kernel_version == NEWER_2_6)
 	{
-		static char *pageins_p=NULL;
-		static char *pageouts_p;
-		static char *swapins_p;
-		static char *swapouts_p;
+		char *pageins_p  = NULL;
+		char *pageouts_p = NULL;
+		char *swapins_p  = NULL;
+		char *swapouts_p = NULL;
 
 		vmstatfp = freopen("/proc/vmstat", "r", vmstatfp);
-		fread_unlocked (buf, 1024, 1, vmstatfp);
-		if (!pageins_p)
+
+		while(!pageins_p || !pageouts_p || !swapins_p || !swapouts_p)
 		{
-			pageins_p  = strstr(buf, "pgpgin"  ) + 6;
-			pageouts_p = strstr(buf, "pgpgout" ) + 7;
-			swapins_p  = strstr(buf, "pswpin"  ) + 6;
-			swapouts_p = strstr(buf, "pswpout" ) + 7;
+			if(fgets(buf, sizeof buf, vmstatfp) == NULL)
+				break;
+
+#define BUFCMP(s) strncmp(buf, s, sizeof s - 1)
+
+			if (BUFCMP("pgpgin") == 0)
+			{
+				if (!pageins_p)
+				{
+					pageins_p = buf + sizeof "pgpgin";
+					sscanf(pageins_p, "%ld", &pageins);
+				}
+				continue;
+			}
+			if (BUFCMP("pgpgout") == 0)
+			{
+				if (!pageouts_p)
+				{
+					pageouts_p = buf + sizeof "pgpgout";
+					sscanf(pageouts_p, "%ld", &pageouts);
+				}
+				continue;
+			}
+			if (BUFCMP("pswpin") == 0)
+			{
+				if (!swapins_p)
+				{
+					swapins_p = buf + sizeof "pswpin";
+					sscanf(swapins_p, "%ld", &swapins);
+				}
+				continue;
+			}
+			if (BUFCMP("pswpout") == 0)
+			{
+				if (!swapouts_p)
+				{
+					swapouts_p = buf + sizeof "pswpout";
+					sscanf(swapouts_p, "%ld", &swapouts);
+				}
+				continue;
+			}
+
+#undef BUFCMP
 		}
-		sscanf(pageins_p,  "%ld", &pageins  );
-		sscanf(pageouts_p, "%ld", &pageouts );
-		sscanf(swapins_p,  "%ld", &swapins  );
-		sscanf(swapouts_p, "%ld", &swapouts );
 	}
 
 	for(i = 0, ents = 0; ents < 5 && fgets(buf, 1024, statfp); i++)
