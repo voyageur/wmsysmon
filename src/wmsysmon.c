@@ -798,19 +798,24 @@ void DrawStuff( void )
 
 void DrawMem(void)
 {
-	static char *p_mem_tot=NULL, *p_mem_free, *p_mem_buffers, *p_mem_cache;
-	static char *p_swap_total, *p_swap_free;
+	char *p_mem_total   = NULL;
+	char *p_mem_free    = NULL;
+	char *p_mem_buffers = NULL;
+	char *p_mem_cache   = NULL;
+	char *p_swap_total  = NULL;
+	char *p_swap_free   = NULL;
 
-	static int	last_mem = 0, last_swap = 0, first = 1;
-	static long 	mem_total = 0;
-	static long 	mem_free = 0;
-	static long 	mem_buffers = 0;
-	static long 	mem_cache = 0;
-	static long 	swap_total = 0;
-	static long 	swap_free = 0;
+	static int last_mem = 0, last_swap = 0, first = 1;
 
-	static int 	mempercent = 0;
-	static int 	swappercent = 0;
+	long 	mem_total = 0;
+	long 	mem_free = 0;
+	long 	mem_buffers = 0;
+	long 	mem_cache = 0;
+	long 	swap_total = 0;
+	long 	swap_free = 0;
+
+	int 	mempercent = 0;
+	int 	swappercent = 0;
 
 #if 0
 	counter--;
@@ -820,36 +825,89 @@ void DrawMem(void)
 #endif
 
 	memfp = freopen("/proc/meminfo", "r", memfp);
-	fread_unlocked (buf, 1024, 1, memfp);
 
-	if (!p_mem_tot)
+	while(!p_mem_total || !p_mem_free || !p_mem_buffers || !p_mem_cache ||
+	      !p_swap_total || !p_swap_free)
 	{
-		p_mem_tot     = strstr(buf, "MemTotal:" ) + 13;
-		p_mem_free    = strstr(buf, "MemFree:"  ) + 13;
-		p_mem_buffers = strstr(buf, "Buffers:"  ) + 13;
-		p_mem_cache   = strstr(buf, "Cached:"   ) + 13;
-		p_swap_total  = strstr(buf, "SwapTotal:") + 13;
-		p_swap_free   = strstr(buf, "SwapFree:" ) + 13;
-	}
+		if(fgets(buf, sizeof buf, memfp) == NULL)
+			break;
 
-	sscanf(p_mem_tot,     "%ld", &mem_total  );
-	sscanf(p_mem_free,    "%ld", &mem_free   );
-	sscanf(p_mem_buffers, "%ld", &mem_buffers);
-	sscanf(p_mem_cache,   "%ld", &mem_cache  );
-	sscanf(p_swap_total,  "%ld", &swap_total );
-	sscanf(p_swap_free,   "%ld", &swap_free  );
+#define BUFCMP(s) strncmp(buf, s, sizeof s - 1)
+
+		if (BUFCMP("MemTotal:") == 0)
+		{
+			if (!p_mem_total)
+			{
+				p_mem_total = buf + sizeof "MemTotal:";
+				sscanf(p_mem_total, "%ld", &mem_total);
+			}
+			continue;
+		}
+
+		if (BUFCMP("MemFree:") == 0)
+		{
+			if (!p_mem_free)
+			{
+				p_mem_free = buf + sizeof "MemFree:";
+				sscanf(p_mem_free, "%ld", &mem_free);
+			}
+			continue;
+		}
+
+		if (BUFCMP("Buffers:") == 0)
+		{
+			if (!p_mem_buffers)
+			{
+				p_mem_buffers = buf + sizeof "Buffers:";
+				sscanf(p_mem_buffers, "%ld", &mem_buffers);
+			}
+			continue;
+		}
+
+		if (BUFCMP("Cached:") == 0)
+		{
+			if (!p_mem_cache)
+			{
+				p_mem_cache = buf + sizeof "Cached:";
+				sscanf(p_mem_cache, "%ld", &mem_cache);
+			}
+			continue;
+		}
+
+		if (BUFCMP("SwapTotal:") == 0)
+		{
+			if (!p_swap_total)
+			{
+				p_swap_total = buf + sizeof "SwapTotal:";
+				sscanf(p_swap_total, "%ld", &swap_total);
+			}
+			continue;
+		}
+
+		if (BUFCMP("SwapFree:") == 0)
+		{
+			if (!p_swap_free)
+			{
+				p_swap_free = buf + sizeof "SwapFree:";
+				sscanf(p_swap_free, "%ld", &swap_free);
+			}
+			continue;
+		}
+
+#undef BUFCMP
+	}
 
 	/* could speed this up but we'd lose precision, look more into it to see
 	 * if precision change would be noticable, and if speed diff is significant
 	 */
 	mempercent = ((float)(mem_total - mem_free - mem_buffers - mem_cache)
-								/
-								(float)mem_total) * 100;
+			/
+			(float)mem_total) * 100;
 
 	if (!swap_total) swappercent = 0;
 	else swappercent = ((float)(swap_total - swap_free)
-											/
-											(float)swap_total) * 100;
+			/
+			(float)swap_total) * 100;
 
 	if(mempercent != last_mem || first) {
 		last_mem = mempercent;
