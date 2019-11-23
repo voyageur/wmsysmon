@@ -18,4 +18,5 @@ clean:
 	rm -f $(OBJS) $(BIN)
 
 install: all
-	install -g root -o root $(BIN) $(DESTDIR)$(PREFIX)/bin
+	install -d             $(DESTDIR)$(PREFIX)/bin
+	install -m 0755 $(BIN) $(DESTDIR)$(PREFIX)/bin
