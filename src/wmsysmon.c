@@ -551,20 +551,20 @@ void DrawStuff( void )
 		{
 			sscanf(	buf,
 #ifdef HI_INTS
-							"%*s %*d %ld %ld %ld %ld %ld"
-							"%ld %ld %ld %ld %ld %ld %ld"
-							"%ld %ld %ld %ld %ld %ld %ld"
-							"%ld %ld %ld %ld %ld",
-							&ints[0], &ints[1], &ints[2],
-							&ints[3], &ints[4], &ints[5],
-							&ints[6], &ints[7], &ints[8],
-							&ints[9], &ints[10], &ints[11],
-							&ints[12], &ints[13], &ints[14],
-							&ints[15], &ints[16], &ints[17],
-							&ints[18], &ints[19], &ints[20],
-							&ints[21], &ints[22], &ints[23]);
+				"%*s %*d %ld %ld %ld %ld %ld"
+				"%ld %ld %ld %ld %ld %ld %ld"
+				"%ld %ld %ld %ld %ld %ld %ld"
+				"%ld %ld %ld %ld %ld",
+				&ints[0], &ints[1], &ints[2],
+				&ints[3], &ints[4], &ints[5],
+				&ints[6], &ints[7], &ints[8],
+				&ints[9], &ints[10], &ints[11],
+				&ints[12], &ints[13], &ints[14],
+				&ints[15], &ints[16], &ints[17],
+				&ints[18], &ints[19], &ints[20],
+				&ints[21], &ints[22], &ints[23]);
 #else
-			"%*s %*d %ld %ld %ld %ld %ld"
+				"%*s %*d %ld %ld %ld %ld %ld"
 				"%ld %ld %ld %ld %ld %ld %ld"
 				"%ld %ld %ld %ld",
 				&ints[0], &ints[1], &ints[2],
@@ -574,190 +574,189 @@ void DrawStuff( void )
 				&ints[12], &ints[13], &ints[14],
 				&ints[15]);
 #endif
-		ents++;
-	}
-}
-
-
-if(int_mode == INT_LITES) {
-	/* top 8 ints */
-	for (i = 0; i < 8; i++) {
-		if ( ints[i] > last_ints[i] && !int_lites[i]) {
-			int_lites[i] = 1;
-#ifdef HI_INTS
-			DrawLite(B_GREEN, 4 + (i * LITEW) + i, 43);
-#else
-			DrawLite(B_GREEN, 4 + (i * LITEW) + i, 51);
-#endif
-		} else if(ints[i] == last_ints[i] && int_lites[i]) {
-			int_lites[i] = 0;
-#ifdef HI_INTS
-			DrawLite(B_OFF, 4 + (i * LITEW) + i, 43);
-#else
-			DrawLite(B_OFF, 4 + (i * LITEW) + i, 51);
-#endif
-		}
-	}
-	/* middle/bottom 8 */
-	for (i = 8; i < 16; i++) {
-		if ( ints[i] > last_ints[i] && !int_lites[i]) {
-			int_lites[i] = 1;
-#ifdef HI_INTS
-			DrawLite(B_GREEN, 4 + ((i - 8) *LITEW) + (i - 8), 48);
-#else
-			DrawLite(B_GREEN, 4 + ((i - 8) *LITEW) + (i - 8), 56);
-#endif
-		} else if(ints[i] == last_ints[i] && int_lites[i]) {
-			int_lites[i] = 0;
-#ifdef HI_INTS
-			DrawLite(B_OFF, 4 + ((i - 8) * LITEW) + (i - 8), 48);
-#else
-			DrawLite(B_OFF, 4 + ((i - 8) * LITEW) + (i - 8), 56);
-#endif
+			ents++;
 		}
 	}
 
+	if(int_mode == INT_LITES) {
+		/* top 8 ints */
+		for (i = 0; i < 8; i++) {
+			if ( ints[i] > last_ints[i] && !int_lites[i]) {
+				int_lites[i] = 1;
 #ifdef HI_INTS
-	/* bottom 8 on alpha/smp x86 */
-	for (i = 16; i < 24; i++) {
-		if (ints[i] > last_ints[i] && !int_lites[i] ) {
-			int_lites[i] = 1;
-			DrawLite(B_GREEN, 4 + ((i - 16) * LITEW) + (i - 16), 53);
-		} else if(ints[i] == last_ints[i] && int_lites[i]) {
-			int_lites[i] = 0;
-			DrawLite(B_OFF, 4 + ((i -16) * LITEW) + (i - 16), 53);
+				DrawLite(B_GREEN, 4 + (i * LITEW) + i, 43);
+#else
+				DrawLite(B_GREEN, 4 + (i * LITEW) + i, 51);
+#endif
+			} else if(ints[i] == last_ints[i] && int_lites[i]) {
+				int_lites[i] = 0;
+#ifdef HI_INTS
+				DrawLite(B_OFF, 4 + (i * LITEW) + i, 43);
+#else
+				DrawLite(B_OFF, 4 + (i * LITEW) + i, 51);
+#endif
+			}
 		}
-	}
-#endif
-} else if(int_mode == INT_METERS) {
-	for (i = 0; i < 8; i++) {
-		if(last_ints[i]) {
-			intdiff = ints[i] - last_ints[i];
-			int_peaks[i] = (int_peaks[i] + intdiff) >> 1;
+		/* middle/bottom 8 */
+		for (i = 8; i < 16; i++) {
+			if ( ints[i] > last_ints[i] && !int_lites[i]) {
+				int_lites[i] = 1;
 #ifdef HI_INTS
-			DrawMeter(intdiff,
-								int_peaks[i],
-								VBAR_H + (i * VBAR_W) + i,
-								43);
+				DrawLite(B_GREEN, 4 + ((i - 8) * LITEW) + (i - 8), 48);
 #else
-			DrawMeter(intdiff,
-								int_peaks[i],
-								VBAR_H + (i * VBAR_W) + i,
-								51);
+				DrawLite(B_GREEN, 4 + ((i - 8) * LITEW) + (i - 8), 56);
 #endif
+			} else if(ints[i] == last_ints[i] && int_lites[i]) {
+				int_lites[i] = 0;
+#ifdef HI_INTS
+				DrawLite(B_OFF, 4 + ((i - 8) * LITEW) + (i - 8), 48);
+#else
+				DrawLite(B_OFF, 4 + ((i - 8) * LITEW) + (i - 8), 56);
+#endif
+			}
 		}
-	}
 
-	for (i = 8; i < 16; i++) {
-		if(last_ints[i]) {
-			intdiff = ints[i] - last_ints[i];
-			int_peaks[i] = (int_peaks[i] + intdiff) >> 1;
 #ifdef HI_INTS
-			DrawMeter(intdiff,
-								int_peaks[i],
-								VBAR_H + ((i - 8) * VBAR_W) + (i - 8),
-								48);
-#else
-			DrawMeter(intdiff,
-								int_peaks[i],
-								VBAR_H + ((i - 8) * VBAR_W) + (i - 8),
-								56);
-#endif
+		/* bottom 8 on alpha/smp x86 */
+		for (i = 16; i < 24; i++) {
+			if (ints[i] > last_ints[i] && !int_lites[i] ) {
+				int_lites[i] = 1;
+				DrawLite(B_GREEN, 4 + ((i - 16) * LITEW) + (i - 16), 53);
+			} else if(ints[i] == last_ints[i] && int_lites[i]) {
+				int_lites[i] = 0;
+				DrawLite(B_OFF, 4 + ((i - 16) * LITEW) + (i - 16), 53);
+			}
 		}
-	}
-
+#endif
+	} else if(int_mode == INT_METERS) {
+		for (i = 0; i < 8; i++) {
+			if(last_ints[i]) {
+				intdiff = ints[i] - last_ints[i];
+				int_peaks[i] = (int_peaks[i] + intdiff) >> 1;
 #ifdef HI_INTS
-	for (i = 16; i < 24; i++) {
-		if(last_ints[i]) {
-			intdiff = ints[i] - last_ints[i];
-			int_peaks[i] = (int_peaks[i] + intdiff) >> 1;
-
-			DrawMeter(intdiff,
-								int_peaks[i],
-								VBAR_H + ((i - 16) * VBAR_W) + (i - 16),
-								53);
+				DrawMeter(intdiff,
+					int_peaks[i],
+					VBAR_H + (i * VBAR_W) + i,
+					43);
+#else
+				DrawMeter(intdiff,
+					int_peaks[i],
+					VBAR_H + (i * VBAR_W) + i,
+					51);
+#endif
+			}
 		}
+
+		for (i = 8; i < 16; i++) {
+			if(last_ints[i]) {
+				intdiff = ints[i] - last_ints[i];
+				int_peaks[i] = (int_peaks[i] + intdiff) >> 1;
+#ifdef HI_INTS
+				DrawMeter(intdiff,
+					int_peaks[i],
+					VBAR_H + ((i - 8) * VBAR_W) + (i - 8),
+					48);
+#else
+				DrawMeter(intdiff,
+					int_peaks[i],
+					VBAR_H + ((i - 8) * VBAR_W) + (i - 8),
+					56);
+#endif
+			}
+		}
+
+#ifdef HI_INTS
+		for (i = 16; i < 24; i++) {
+			if(last_ints[i]) {
+				intdiff = ints[i] - last_ints[i];
+				int_peaks[i] = (int_peaks[i] + intdiff) >> 1;
+
+				DrawMeter(intdiff,
+					int_peaks[i],
+					VBAR_H + ((i - 16) * VBAR_W) + (i - 16),
+					53);
+			}
+		}
+#endif
 	}
-#endif
-}
 
-tints = last_ints;
-last_ints = ints;
-ints = tints;
+	tints = last_ints;
+	last_ints = ints;
+	ints = tints;
 
-/* page in / out */
+	/* page in / out */
 
-if (pageins > last_pageins && !pagein_lite) {
-	pagein_lite = 1;
+	if (pageins > last_pageins && !pagein_lite) {
+		pagein_lite = 1;
 #ifdef HI_INTS
-	DrawLite(B_RED, 51, 43);
+		DrawLite(B_RED, 51, 43);
 #else
-	DrawLite(B_RED, 51, 51);
+		DrawLite(B_RED, 51, 51);
 #endif
-} else if(pagein_lite) {
-	pagein_lite = 0;
+	} else if(pagein_lite) {
+		pagein_lite = 0;
 #ifdef HI_INTS
-	DrawLite(B_OFF, 51, 43);
+		DrawLite(B_OFF, 51, 43);
 #else
-	DrawLite(B_OFF, 51, 51);
+		DrawLite(B_OFF, 51, 51);
 #endif
-}
+	}
 
-if (pageouts > last_pageouts && !pageout_lite) {
-	pageout_lite = 1;
+	if (pageouts > last_pageouts && !pageout_lite) {
+		pageout_lite = 1;
 #ifdef HI_INTS
-	DrawLite(B_RED, 56, 43);
+		DrawLite(B_RED, 56, 43);
 #else
-	DrawLite(B_RED, 56, 51);
+		DrawLite(B_RED, 56, 51);
 #endif
-} else if(pageout_lite) {
-	pageout_lite = 0;
+	} else if(pageout_lite) {
+		pageout_lite = 0;
 #ifdef HI_INTS
-	DrawLite(B_OFF, 56, 43);
+		DrawLite(B_OFF, 56, 43);
 #else
-	DrawLite(B_OFF, 56, 51);
+		DrawLite(B_OFF, 56, 51);
 #endif
-}
+	}
 
-last_pageins = pageins;
-last_pageouts = pageouts;
+	last_pageins = pageins;
+	last_pageouts = pageouts;
 
-/* swap in/out */
+	/* swap in/out */
 
-if(swapins > last_swapins && !swapin_lite) {
-	swapin_lite = 1;
+	if(swapins > last_swapins && !swapin_lite) {
+		swapin_lite = 1;
 #ifdef HI_INTS
-	DrawLite(B_RED, 51, 48);
+		DrawLite(B_RED, 51, 48);
 #else
-	DrawLite(B_RED, 51, 56);
+		DrawLite(B_RED, 51, 56);
 #endif
-} else if(swapin_lite) {
-	swapin_lite = 0;
+	} else if(swapin_lite) {
+		swapin_lite = 0;
 #ifdef HI_INTS
-	DrawLite(B_OFF, 51, 48);
+		DrawLite(B_OFF, 51, 48);
 #else
-	DrawLite(B_OFF, 51, 56);
+		DrawLite(B_OFF, 51, 56);
 #endif
-}
+	}
 
-if (swapouts > last_swapouts && !swapout_lite) {
-	swapout_lite = 1;
+	if (swapouts > last_swapouts && !swapout_lite) {
+		swapout_lite = 1;
 #ifdef HI_INTS
-	DrawLite(B_RED, 56, 48);
+		DrawLite(B_RED, 56, 48);
 #else
-	DrawLite(B_RED, 56, 56);
+		DrawLite(B_RED, 56, 56);
 #endif
-} else if(swapout_lite) {
-	swapout_lite = 0;
+	} else if(swapout_lite) {
+		swapout_lite = 0;
 #ifdef HI_INTS
-	DrawLite(B_OFF, 56, 48);
+		DrawLite(B_OFF, 56, 48);
 #else
-	DrawLite(B_OFF, 56, 56);
+		DrawLite(B_OFF, 56, 56);
 #endif
-}
+	}
 
-last_swapins = swapins;
-last_swapouts = swapouts;
+	last_swapins = swapins;
+	last_swapouts = swapouts;
 
 }
 
