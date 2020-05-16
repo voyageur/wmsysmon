@@ -1,16 +1,28 @@
-LIBS += -lXpm -lXext -lX11 -lm
-#CFLAGS = -g #-DMONDEBUG
-CFLAGS += -W -Wall -pedantic -DHI_INTS #undefine HI_INTS if not on x86 SMP or alpha
+# CFLAGS = -g #-DMONDEBUG
 
-PREFIX = /usr
+#
+# undefine HI_INTS if not on x86 SMP or alpha
+#
+CFLAGS	+= -W -Wall -pedantic -DHI_INTS \
+	   $(shell pkg-config dockapp --cflags) \
+	   $(shell pkg-config x11     --cflags) \
+	   $(shell pkg-config xext    --cflags) \
+	   $(shell pkg-config xpm     --cflags)
 
-BIN = wmsysmon
-OBJS = wmgeneral.o \
-	wmsysmon.o  \
-	cpu_linux.o
+LIBS	+= $(shell pkg-config dockapp --libs) \
+	   $(shell pkg-config x11     --libs) \
+	   $(shell pkg-config xext    --libs) \
+	   $(shell pkg-config xpm     --libs) \
+	   -lm
+
+PREFIX	= /usr
+
+BIN	= wmsysmon
+OBJS	= wmsysmon.o \
+	  cpu_linux.o
 
 $(BIN): $(OBJS)
-	$(CC) $(LDFLAGS) $(OBJS) $(LIBS) -o $(BIN)
+	$(CC) $(LDFLAGS) $(OBJS) -o $(BIN) $(LIBS)
 
 all: wmsysmon
 
@@ -18,4 +30,5 @@ clean:
 	rm -f $(OBJS) $(BIN)
 
 install: all
-	install -g root -o root $(BIN) $(DESTDIR)$(PREFIX)/bin
+	install -d             $(DESTDIR)$(PREFIX)/bin
+	install -m 0755 $(BIN) $(DESTDIR)$(PREFIX)/bin

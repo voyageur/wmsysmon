@@ -41,9 +41,8 @@
 #include <X11/Xlib.h>
 #include <X11/xpm.h>
 #include <X11/extensions/shape.h>
+#include <libdockapp/wmgeneral.h>
 
-
-#include "wmgeneral.h"
 #include "cpu.h"
 
 #ifdef HI_INTS
@@ -169,14 +168,14 @@ int main(int argc, char *argv[])
 
 	last_ints = _last_ints;
 	ints = _ints;
-    
+
  	/* some defaults for CPU percentage */
 	cpu_opts.ignore_nice = False;
 	cpu_opts.cpu_number = CPUNUM_NONE;
 	cpu_opts.ignore_procs = 0;
- 
+
  	kernel_version = Get_Kernel_version();
- 
+
  	/* Parse Command Line */
 
 	ProgName = argv[0];
@@ -186,7 +185,7 @@ int main(int argc, char *argv[])
  	for (i = 1; i < argc; i++)
  	{
 		char *arg = argv[i];
-  
+
  		if (*arg == '-')
  		{
  			switch (arg[1])
@@ -242,7 +241,7 @@ int main(int argc, char *argv[])
  					cpu_opts.ignore_proc_list[cpu_opts.ignore_procs] = argv[i];
  					cpu_opts.ignore_procs++;
  					break;
- 
+
  				default:
  					usage();
  					exit(0);
@@ -250,11 +249,11 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
-  
+
  	/* Init CPU percentage stuff */
  	/* NOT NEEDED ON LINUX */
  	/* cpu_init(); */
- 
+
 
 	wmsysmon_routine(argc, argv);
 
@@ -268,16 +267,14 @@ void wmsysmon_routine(int argc, char **argv)
 	int		i;
 	XEvent		Event;
 	FILE		*fp;
-	int		xfd;
 	struct pollfd	pfd;
-    
+
 
 	createXBMfromXPM(wmsysmon_mask_bits, wmsysmon_master_xpm, wmsysmon_mask_width, wmsysmon_mask_height);
-    
-	xfd = openXwindow(argc, argv, wmsysmon_master_xpm, wmsysmon_mask_bits, wmsysmon_mask_width, wmsysmon_mask_height);
-	if(xfd < 0) exit(1);
 
-	pfd.fd = xfd;
+	openXwindow(argc, argv, wmsysmon_master_xpm, wmsysmon_mask_bits, wmsysmon_mask_width, wmsysmon_mask_height);
+
+	pfd.fd = XConnectionNumber(display);
 	pfd.events = (POLLIN);
 
 	/* init ints */
@@ -285,7 +282,7 @@ void wmsysmon_routine(int argc, char **argv)
 	bzero(&_ints, sizeof(_ints));
 	bzero(&int_peaks, sizeof(int_peaks));
 
-    
+
 	/* init uptime */
 	fp = fopen("/proc/uptime", "r");
 	if (fp) {
@@ -297,8 +294,8 @@ void wmsysmon_routine(int argc, char **argv)
 	statfp = fopen("/proc/stat", "r");
 	memfp = fopen("/proc/meminfo", "r");
 	if (kernel_version == NEWER_2_6) vmstatfp = fopen("/proc/vmstat", "r");
- 
-  
+
+
  	/* here we find tags in /proc/stat and note their
 	 * lines, for faster lookup throughout execution.
 	 */
@@ -311,17 +308,17 @@ void wmsysmon_routine(int argc, char **argv)
  		}
  		if(strstr(buf, "intr")) intr_l = i;
 	}
-  
+
 	while(1)
 	{
 		curtime = time(0);
-  
+
 		DrawCpuPercentage();
 		DrawUptime();
 		DrawStuff();
 		DrawMem();
 		RedrawWindow();
- 
+
 		/* X Events */
 		poll(&pfd, 1, update_rate);
 		while (XPending(display))
@@ -330,10 +327,7 @@ void wmsysmon_routine(int argc, char **argv)
 			switch (Event.type)
 			{
 				case Expose:
-					DirtyWindow(Event.xexpose.x,
-											Event.xexpose.y,
-											Event.xexpose.width,
-											Event.xexpose.height);
+					RedrawWindow();
 					break;
 				case DestroyNotify:
 					XCloseDisplay(display);
@@ -418,7 +412,7 @@ void DrawCpuPercentage(void)
 {
 	int cpupercentage = cpu_get_usage(&cpu_opts);
 	static int oldcpupercentage = -1;
-	
+
 	if (cpupercentage != oldcpupercentage)
 	{
 #ifdef HI_INTS
@@ -438,7 +432,7 @@ void DrawUptime(void)
 	static long	uptime;
 	static int	i;
 
-    
+
 	uptime = curtime - start_uptime + start_time;
 
 	/* blit minutes */
@@ -454,7 +448,7 @@ void DrawUptime(void)
 		BlitString(buf, 45, 37);
 #endif
 	}
-    
+
 	/* blit hours */
 	uptime /=60;
 	i = uptime % 24;
@@ -469,7 +463,7 @@ void DrawUptime(void)
 #endif
 	}
 
-    
+
 	/* blit days */
 	uptime /= 24;
 	i = uptime;
@@ -512,24 +506,59 @@ void DrawStuff( void )
 
 	if (kernel_version == NEWER_2_6)
 	{
-		static char *pageins_p=NULL;
-		static char *pageouts_p;
-		static char *swapins_p;
-		static char *swapouts_p;
- 
+		char *pageins_p  = NULL;
+		char *pageouts_p = NULL;
+		char *swapins_p  = NULL;
+		char *swapouts_p = NULL;
+
 		vmstatfp = freopen("/proc/vmstat", "r", vmstatfp);
-		fread_unlocked (buf, 1024, 1, vmstatfp);
-		if (!pageins_p)
+
+		while(!pageins_p || !pageouts_p || !swapins_p || !swapouts_p)
 		{
-			pageins_p  = strstr(buf, "pgpgin"  ) + 6;
-			pageouts_p = strstr(buf, "pgpgout" ) + 7;
-			swapins_p  = strstr(buf, "pswpin"  ) + 6;
-			swapouts_p = strstr(buf, "pswpout" ) + 7;
+			if(fgets(buf, sizeof buf, vmstatfp) == NULL)
+				break;
+
+#define BUFCMP(s) strncmp(buf, s, sizeof s - 1)
+
+			if (BUFCMP("pgpgin") == 0)
+			{
+				if (!pageins_p)
+				{
+					pageins_p = buf + sizeof "pgpgin";
+					sscanf(pageins_p, "%ld", &pageins);
+				}
+				continue;
+			}
+			if (BUFCMP("pgpgout") == 0)
+			{
+				if (!pageouts_p)
+				{
+					pageouts_p = buf + sizeof "pgpgout";
+					sscanf(pageouts_p, "%ld", &pageouts);
+				}
+				continue;
+			}
+			if (BUFCMP("pswpin") == 0)
+			{
+				if (!swapins_p)
+				{
+					swapins_p = buf + sizeof "pswpin";
+					sscanf(swapins_p, "%ld", &swapins);
+				}
+				continue;
+			}
+			if (BUFCMP("pswpout") == 0)
+			{
+				if (!swapouts_p)
+				{
+					swapouts_p = buf + sizeof "pswpout";
+					sscanf(swapouts_p, "%ld", &swapouts);
+				}
+				continue;
+			}
+
+#undef BUFCMP
 		}
-		sscanf(pageins_p,  "%ld", &pageins  );
-		sscanf(pageouts_p, "%ld", &pageouts );
-		sscanf(swapins_p,  "%ld", &swapins  );
-		sscanf(swapouts_p, "%ld", &swapouts );												
 	}
 
 	for(i = 0, ents = 0; ents < 5 && fgets(buf, 1024, statfp); i++)
@@ -551,20 +580,20 @@ void DrawStuff( void )
 		{
 			sscanf(	buf,
 #ifdef HI_INTS
-							"%*s %*d %ld %ld %ld %ld %ld"
-							"%ld %ld %ld %ld %ld %ld %ld"
-							"%ld %ld %ld %ld %ld %ld %ld"
-							"%ld %ld %ld %ld %ld",
-							&ints[0], &ints[1], &ints[2],
-							&ints[3], &ints[4], &ints[5],
-							&ints[6], &ints[7], &ints[8],
-							&ints[9], &ints[10], &ints[11],
-							&ints[12], &ints[13], &ints[14],
-							&ints[15], &ints[16], &ints[17],
-							&ints[18], &ints[19], &ints[20],
-							&ints[21], &ints[22], &ints[23]);
+				"%*s %*d %ld %ld %ld %ld %ld"
+				"%ld %ld %ld %ld %ld %ld %ld"
+				"%ld %ld %ld %ld %ld %ld %ld"
+				"%ld %ld %ld %ld %ld",
+				&ints[0], &ints[1], &ints[2],
+				&ints[3], &ints[4], &ints[5],
+				&ints[6], &ints[7], &ints[8],
+				&ints[9], &ints[10], &ints[11],
+				&ints[12], &ints[13], &ints[14],
+				&ints[15], &ints[16], &ints[17],
+				&ints[18], &ints[19], &ints[20],
+				&ints[21], &ints[22], &ints[23]);
 #else
-			"%*s %*d %ld %ld %ld %ld %ld"
+				"%*s %*d %ld %ld %ld %ld %ld"
 				"%ld %ld %ld %ld %ld %ld %ld"
 				"%ld %ld %ld %ld",
 				&ints[0], &ints[1], &ints[2],
@@ -574,247 +603,305 @@ void DrawStuff( void )
 				&ints[12], &ints[13], &ints[14],
 				&ints[15]);
 #endif
-		ents++;
-	}
-}
-
-
-if(int_mode == INT_LITES) {
-	/* top 8 ints */
-	for (i = 0; i < 8; i++) {
-		if ( ints[i] > last_ints[i] && !int_lites[i]) {
-			int_lites[i] = 1;
-#ifdef HI_INTS
-			DrawLite(B_GREEN, 4 + (i * LITEW) + i, 43);
-#else
-			DrawLite(B_GREEN, 4 + (i * LITEW) + i, 51);
-#endif
-		} else if(ints[i] == last_ints[i] && int_lites[i]) {
-			int_lites[i] = 0;
-#ifdef HI_INTS
-			DrawLite(B_OFF, 4 + (i * LITEW) + i, 43);
-#else
-			DrawLite(B_OFF, 4 + (i * LITEW) + i, 51);
-#endif
-		}
-	}
-	/* middle/bottom 8 */
-	for (i = 8; i < 16; i++) {
-		if ( ints[i] > last_ints[i] && !int_lites[i]) {
-			int_lites[i] = 1;
-#ifdef HI_INTS
-			DrawLite(B_GREEN, 4 + ((i - 8) *LITEW) + (i - 8), 48);
-#else
-			DrawLite(B_GREEN, 4 + ((i - 8) *LITEW) + (i - 8), 56);
-#endif
-		} else if(ints[i] == last_ints[i] && int_lites[i]) {
-			int_lites[i] = 0;
-#ifdef HI_INTS
-			DrawLite(B_OFF, 4 + ((i - 8) * LITEW) + (i - 8), 48);
-#else
-			DrawLite(B_OFF, 4 + ((i - 8) * LITEW) + (i - 8), 56);
-#endif
+			ents++;
 		}
 	}
 
+	if(int_mode == INT_LITES) {
+		/* top 8 ints */
+		for (i = 0; i < 8; i++) {
+			if ( ints[i] > last_ints[i] && !int_lites[i]) {
+				int_lites[i] = 1;
 #ifdef HI_INTS
-	/* bottom 8 on alpha/smp x86 */
-	for (i = 16; i < 24; i++) {
-		if (ints[i] > last_ints[i] && !int_lites[i] ) {
-			int_lites[i] = 1;
-			DrawLite(B_GREEN, 4 + ((i - 16) * LITEW) + (i - 16), 53);
-		} else if(ints[i] == last_ints[i] && int_lites[i]) {
-			int_lites[i] = 0;
-			DrawLite(B_OFF, 4 + ((i -16) * LITEW) + (i - 16), 53);
+				DrawLite(B_GREEN, 4 + (i * LITEW) + i, 43);
+#else
+				DrawLite(B_GREEN, 4 + (i * LITEW) + i, 51);
+#endif
+			} else if(ints[i] == last_ints[i] && int_lites[i]) {
+				int_lites[i] = 0;
+#ifdef HI_INTS
+				DrawLite(B_OFF, 4 + (i * LITEW) + i, 43);
+#else
+				DrawLite(B_OFF, 4 + (i * LITEW) + i, 51);
+#endif
+			}
 		}
-	}
-#endif
-} else if(int_mode == INT_METERS) {
-	for (i = 0; i < 8; i++) {
-		if(last_ints[i]) {
-			intdiff = ints[i] - last_ints[i];
-			int_peaks[i] = (int_peaks[i] + intdiff) >> 1;
+		/* middle/bottom 8 */
+		for (i = 8; i < 16; i++) {
+			if ( ints[i] > last_ints[i] && !int_lites[i]) {
+				int_lites[i] = 1;
 #ifdef HI_INTS
-			DrawMeter(intdiff,
-								int_peaks[i],
-								VBAR_H + (i * VBAR_W) + i,
-								43);
+				DrawLite(B_GREEN, 4 + ((i - 8) * LITEW) + (i - 8), 48);
 #else
-			DrawMeter(intdiff,
-								int_peaks[i],
-								VBAR_H + (i * VBAR_W) + i,
-								51);
+				DrawLite(B_GREEN, 4 + ((i - 8) * LITEW) + (i - 8), 56);
 #endif
+			} else if(ints[i] == last_ints[i] && int_lites[i]) {
+				int_lites[i] = 0;
+#ifdef HI_INTS
+				DrawLite(B_OFF, 4 + ((i - 8) * LITEW) + (i - 8), 48);
+#else
+				DrawLite(B_OFF, 4 + ((i - 8) * LITEW) + (i - 8), 56);
+#endif
+			}
 		}
-	}
 
-	for (i = 8; i < 16; i++) {
-		if(last_ints[i]) {
-			intdiff = ints[i] - last_ints[i];
-			int_peaks[i] = (int_peaks[i] + intdiff) >> 1;
 #ifdef HI_INTS
-			DrawMeter(intdiff,
-								int_peaks[i],
-								VBAR_H + ((i - 8) * VBAR_W) + (i - 8),
-								48);
-#else
-			DrawMeter(intdiff,
-								int_peaks[i],
-								VBAR_H + ((i - 8) * VBAR_W) + (i - 8),
-								56);
-#endif
+		/* bottom 8 on alpha/smp x86 */
+		for (i = 16; i < 24; i++) {
+			if (ints[i] > last_ints[i] && !int_lites[i] ) {
+				int_lites[i] = 1;
+				DrawLite(B_GREEN, 4 + ((i - 16) * LITEW) + (i - 16), 53);
+			} else if(ints[i] == last_ints[i] && int_lites[i]) {
+				int_lites[i] = 0;
+				DrawLite(B_OFF, 4 + ((i - 16) * LITEW) + (i - 16), 53);
+			}
 		}
-	}
-
+#endif
+	} else if(int_mode == INT_METERS) {
+		for (i = 0; i < 8; i++) {
+			if(last_ints[i]) {
+				intdiff = ints[i] - last_ints[i];
+				int_peaks[i] = (int_peaks[i] + intdiff) >> 1;
 #ifdef HI_INTS
-	for (i = 16; i < 24; i++) {
-		if(last_ints[i]) {
-			intdiff = ints[i] - last_ints[i];
-			int_peaks[i] = (int_peaks[i] + intdiff) >> 1;
-
-			DrawMeter(intdiff,
-								int_peaks[i],
-								VBAR_H + ((i - 16) * VBAR_W) + (i - 16),
-								53);
+				DrawMeter(intdiff,
+					int_peaks[i],
+					VBAR_H + (i * VBAR_W) + i,
+					43);
+#else
+				DrawMeter(intdiff,
+					int_peaks[i],
+					VBAR_H + (i * VBAR_W) + i,
+					51);
+#endif
+			}
 		}
+
+		for (i = 8; i < 16; i++) {
+			if(last_ints[i]) {
+				intdiff = ints[i] - last_ints[i];
+				int_peaks[i] = (int_peaks[i] + intdiff) >> 1;
+#ifdef HI_INTS
+				DrawMeter(intdiff,
+					int_peaks[i],
+					VBAR_H + ((i - 8) * VBAR_W) + (i - 8),
+					48);
+#else
+				DrawMeter(intdiff,
+					int_peaks[i],
+					VBAR_H + ((i - 8) * VBAR_W) + (i - 8),
+					56);
+#endif
+			}
+		}
+
+#ifdef HI_INTS
+		for (i = 16; i < 24; i++) {
+			if(last_ints[i]) {
+				intdiff = ints[i] - last_ints[i];
+				int_peaks[i] = (int_peaks[i] + intdiff) >> 1;
+
+				DrawMeter(intdiff,
+					int_peaks[i],
+					VBAR_H + ((i - 16) * VBAR_W) + (i - 16),
+					53);
+			}
+		}
+#endif
 	}
-#endif
-}
 
-tints = last_ints;
-last_ints = ints;
-ints = tints;
+	tints = last_ints;
+	last_ints = ints;
+	ints = tints;
 
-/* page in / out */
+	/* page in / out */
 
-if (pageins > last_pageins && !pagein_lite) {
-	pagein_lite = 1;
+	if (pageins > last_pageins && !pagein_lite) {
+		pagein_lite = 1;
 #ifdef HI_INTS
-	DrawLite(B_RED, 51, 43);
+		DrawLite(B_RED, 51, 43);
 #else
-	DrawLite(B_RED, 51, 51);
+		DrawLite(B_RED, 51, 51);
 #endif
-} else if(pagein_lite) {
-	pagein_lite = 0;
+	} else if(pagein_lite) {
+		pagein_lite = 0;
 #ifdef HI_INTS
-	DrawLite(B_OFF, 51, 43);
+		DrawLite(B_OFF, 51, 43);
 #else
-	DrawLite(B_OFF, 51, 51);
+		DrawLite(B_OFF, 51, 51);
 #endif
-}
+	}
 
-if (pageouts > last_pageouts && !pageout_lite) {
-	pageout_lite = 1;
+	if (pageouts > last_pageouts && !pageout_lite) {
+		pageout_lite = 1;
 #ifdef HI_INTS
-	DrawLite(B_RED, 56, 43);
+		DrawLite(B_RED, 56, 43);
 #else
-	DrawLite(B_RED, 56, 51);
+		DrawLite(B_RED, 56, 51);
 #endif
-} else if(pageout_lite) {
-	pageout_lite = 0;
+	} else if(pageout_lite) {
+		pageout_lite = 0;
 #ifdef HI_INTS
-	DrawLite(B_OFF, 56, 43);
+		DrawLite(B_OFF, 56, 43);
 #else
-	DrawLite(B_OFF, 56, 51);
+		DrawLite(B_OFF, 56, 51);
 #endif
-}
+	}
 
-last_pageins = pageins;
-last_pageouts = pageouts;
+	last_pageins = pageins;
+	last_pageouts = pageouts;
 
-/* swap in/out */
+	/* swap in/out */
 
-if(swapins > last_swapins && !swapin_lite) {
-	swapin_lite = 1;
+	if(swapins > last_swapins && !swapin_lite) {
+		swapin_lite = 1;
 #ifdef HI_INTS
-	DrawLite(B_RED, 51, 48);
+		DrawLite(B_RED, 51, 48);
 #else
-	DrawLite(B_RED, 51, 56);
+		DrawLite(B_RED, 51, 56);
 #endif
-} else if(swapin_lite) {
-	swapin_lite = 0;
+	} else if(swapin_lite) {
+		swapin_lite = 0;
 #ifdef HI_INTS
-	DrawLite(B_OFF, 51, 48);
+		DrawLite(B_OFF, 51, 48);
 #else
-	DrawLite(B_OFF, 51, 56);
+		DrawLite(B_OFF, 51, 56);
 #endif
-}
+	}
 
-if (swapouts > last_swapouts && !swapout_lite) {
-	swapout_lite = 1;
+	if (swapouts > last_swapouts && !swapout_lite) {
+		swapout_lite = 1;
 #ifdef HI_INTS
-	DrawLite(B_RED, 56, 48);
+		DrawLite(B_RED, 56, 48);
 #else
-	DrawLite(B_RED, 56, 56);
+		DrawLite(B_RED, 56, 56);
 #endif
-} else if(swapout_lite) {
-	swapout_lite = 0;
+	} else if(swapout_lite) {
+		swapout_lite = 0;
 #ifdef HI_INTS
-	DrawLite(B_OFF, 56, 48);
+		DrawLite(B_OFF, 56, 48);
 #else
-	DrawLite(B_OFF, 56, 56);
+		DrawLite(B_OFF, 56, 56);
 #endif
-}
+	}
 
-last_swapins = swapins;
-last_swapouts = swapouts;
+	last_swapins = swapins;
+	last_swapouts = swapouts;
 
 }
 
 
 void DrawMem(void)
 {
-	static char *p_mem_tot=NULL, *p_mem_free, *p_mem_buffers, *p_mem_cache;
-	static char *p_swap_total, *p_swap_free;
+	char *p_mem_total   = NULL;
+	char *p_mem_free    = NULL;
+	char *p_mem_buffers = NULL;
+	char *p_mem_cache   = NULL;
+	char *p_swap_total  = NULL;
+	char *p_swap_free   = NULL;
 
-	static int	last_mem = 0, last_swap = 0, first = 1;
-	static long 	mem_total = 0;
-	static long 	mem_free = 0;
-	static long 	mem_buffers = 0;
-	static long 	mem_cache = 0;
-	static long 	swap_total = 0;
-	static long 	swap_free = 0;
+	static int last_mem = 0, last_swap = 0, first = 1;
 
-	static int 	mempercent = 0;
-	static int 	swappercent = 0;
+	long 	mem_total = 0;
+	long 	mem_free = 0;
+	long 	mem_buffers = 0;
+	long 	mem_cache = 0;
+	long 	swap_total = 0;
+	long 	swap_free = 0;
 
+	int 	mempercent = 0;
+	int 	swappercent = 0;
 
-/* 	counter--; */
+#if 0
+	counter--;
 
-/* 	if(counter >= 0) return; /\* polling /proc/meminfo is EXPENSIVE *\/ */
-/* 	counter = 1500 / update_rate; */
+	if(counter >= 0) return; /* polling /proc/meminfo is EXPENSIVE */
+	counter = 1500 / update_rate;
+#endif
 
 	memfp = freopen("/proc/meminfo", "r", memfp);
-	fread_unlocked (buf, 1024, 1, memfp);
 
-	if (!p_mem_tot)
+	while(!p_mem_total || !p_mem_free || !p_mem_buffers || !p_mem_cache ||
+	      !p_swap_total || !p_swap_free)
 	{
-		p_mem_tot     = strstr(buf, "MemTotal:" ) + 13;
-		p_mem_free    = strstr(buf, "MemFree:"  ) + 13;
-		p_mem_buffers = strstr(buf, "Buffers:"  ) + 13;
-		p_mem_cache   = strstr(buf, "Cached:"   ) + 13;
-		p_swap_total  = strstr(buf, "SwapTotal:") + 13;
-		p_swap_free   = strstr(buf, "SwapFree:" ) + 13;
+		if(fgets(buf, sizeof buf, memfp) == NULL)
+			break;
+
+#define BUFCMP(s) strncmp(buf, s, sizeof s - 1)
+
+		if (BUFCMP("MemTotal:") == 0)
+		{
+			if (!p_mem_total)
+			{
+				p_mem_total = buf + sizeof "MemTotal:";
+				sscanf(p_mem_total, "%ld", &mem_total);
+			}
+			continue;
+		}
+
+		if (BUFCMP("MemFree:") == 0)
+		{
+			if (!p_mem_free)
+			{
+				p_mem_free = buf + sizeof "MemFree:";
+				sscanf(p_mem_free, "%ld", &mem_free);
+			}
+			continue;
+		}
+
+		if (BUFCMP("Buffers:") == 0)
+		{
+			if (!p_mem_buffers)
+			{
+				p_mem_buffers = buf + sizeof "Buffers:";
+				sscanf(p_mem_buffers, "%ld", &mem_buffers);
+			}
+			continue;
+		}
+
+		if (BUFCMP("Cached:") == 0)
+		{
+			if (!p_mem_cache)
+			{
+				p_mem_cache = buf + sizeof "Cached:";
+				sscanf(p_mem_cache, "%ld", &mem_cache);
+			}
+			continue;
+		}
+
+		if (BUFCMP("SwapTotal:") == 0)
+		{
+			if (!p_swap_total)
+			{
+				p_swap_total = buf + sizeof "SwapTotal:";
+				sscanf(p_swap_total, "%ld", &swap_total);
+			}
+			continue;
+		}
+
+		if (BUFCMP("SwapFree:") == 0)
+		{
+			if (!p_swap_free)
+			{
+				p_swap_free = buf + sizeof "SwapFree:";
+				sscanf(p_swap_free, "%ld", &swap_free);
+			}
+			continue;
+		}
+
+#undef BUFCMP
 	}
-	
-	sscanf(p_mem_tot,     "%ld", &mem_total  );
-	sscanf(p_mem_free,    "%ld", &mem_free   );
-	sscanf(p_mem_buffers, "%ld", &mem_buffers);
-	sscanf(p_mem_cache,   "%ld", &mem_cache  );
-	sscanf(p_swap_total,  "%ld", &swap_total );
-	sscanf(p_swap_free,   "%ld", &swap_free  );
 
 	/* could speed this up but we'd lose precision, look more into it to see
 	 * if precision change would be noticable, and if speed diff is significant
 	 */
 	mempercent = ((float)(mem_total - mem_free - mem_buffers - mem_cache)
-								/
-								(float)mem_total) * 100;
+			/
+			(float)mem_total) * 100;
 
 	if (!swap_total) swappercent = 0;
 	else swappercent = ((float)(swap_total - swap_free)
-											/
-											(float)swap_total) * 100;
+			/
+			(float)swap_total) * 100;
 
 	if(mempercent != last_mem || first) {
 		last_mem = mempercent;
@@ -847,7 +934,7 @@ void BlitString(char *name, int x, int y)
 	k = x;
 	for (i=0; name[i]; i++) {
 
-		c = toupper(name[i]); 
+		c = toupper(name[i]);
 		if (c >= 'A' && c <= 'Z') {
 			c -= 'A';
 			copyXPMArea(c * 6, 74, 6, 8, k, y);
@@ -874,7 +961,7 @@ void BlitNum(int num, int x, int y)
 	BlitString(buf, newx, y);
 
 }
-    
+
 
 void usage(void)
 {
