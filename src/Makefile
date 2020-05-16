@@ -3,8 +3,15 @@
 #
 # undefine HI_INTS if not on x86 SMP or alpha
 #
-CFLAGS	+= -W -Wall -pedantic -DHI_INTS
-LIBS	+= -lXpm -lXext -lX11 -lm
+CFLAGS	+= -W -Wall -pedantic -DHI_INTS \
+	   $(shell pkg-config x11     --cflags) \
+	   $(shell pkg-config xext    --cflags) \
+	   $(shell pkg-config xpm     --cflags)
+
+LIBS	+= $(shell pkg-config x11     --libs) \
+	   $(shell pkg-config xext    --libs) \
+	   $(shell pkg-config xpm     --libs) \
+	   -lm
 
 PREFIX	= /usr
 
