@@ -41,9 +41,8 @@
 #include <X11/Xlib.h>
 #include <X11/xpm.h>
 #include <X11/extensions/shape.h>
+#include <libdockapp/wmgeneral.h>
 
-
-#include "wmgeneral.h"
 #include "cpu.h"
 
 #ifdef HI_INTS
@@ -268,16 +267,14 @@ void wmsysmon_routine(int argc, char **argv)
 	int		i;
 	XEvent		Event;
 	FILE		*fp;
-	int		xfd;
 	struct pollfd	pfd;
 
 
 	createXBMfromXPM(wmsysmon_mask_bits, wmsysmon_master_xpm, wmsysmon_mask_width, wmsysmon_mask_height);
 
-	xfd = openXwindow(argc, argv, wmsysmon_master_xpm, wmsysmon_mask_bits, wmsysmon_mask_width, wmsysmon_mask_height);
-	if(xfd < 0) exit(1);
+	openXwindow(argc, argv, wmsysmon_master_xpm, wmsysmon_mask_bits, wmsysmon_mask_width, wmsysmon_mask_height);
 
-	pfd.fd = xfd;
+	pfd.fd = XConnectionNumber(display);
 	pfd.events = (POLLIN);
 
 	/* init ints */
@@ -330,10 +327,7 @@ void wmsysmon_routine(int argc, char **argv)
 			switch (Event.type)
 			{
 				case Expose:
-					DirtyWindow(Event.xexpose.x,
-											Event.xexpose.y,
-											Event.xexpose.width,
-											Event.xexpose.height);
+					RedrawWindow();
 					break;
 				case DestroyNotify:
 					XCloseDisplay(display);

@@ -4,11 +4,13 @@
 # undefine HI_INTS if not on x86 SMP or alpha
 #
 CFLAGS	+= -W -Wall -pedantic -DHI_INTS \
+	   $(shell pkg-config dockapp --cflags) \
 	   $(shell pkg-config x11     --cflags) \
 	   $(shell pkg-config xext    --cflags) \
 	   $(shell pkg-config xpm     --cflags)
 
-LIBS	+= $(shell pkg-config x11     --libs) \
+LIBS	+= $(shell pkg-config dockapp --libs) \
+	   $(shell pkg-config x11     --libs) \
 	   $(shell pkg-config xext    --libs) \
 	   $(shell pkg-config xpm     --libs) \
 	   -lm
@@ -16,8 +18,7 @@ LIBS	+= $(shell pkg-config x11     --libs) \
 PREFIX	= /usr
 
 BIN	= wmsysmon
-OBJS	= wmgeneral.o \
-	  wmsysmon.o  \
+OBJS	= wmsysmon.o \
 	  cpu_linux.o
 
 $(BIN): $(OBJS)
