@@ -51,7 +51,7 @@
 #include "wmsysmon-master-i386.xpm"
 #endif
 
-#define WMSYSMON_VERSION "0.7.8"
+#define WMSYSMON_VERSION "0.8.0"
 
 #define CHAR_WIDTH 5
 #define CHAR_HEIGHT 7
