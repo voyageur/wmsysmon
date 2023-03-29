@@ -1,18 +1,20 @@
 # CFLAGS = -g #-DMONDEBUG
 
+PKG_CONFIG ?= pkg-config
+
 #
 # undefine HI_INTS if not on x86 SMP or alpha
 #
 CFLAGS	+= -W -Wall -pedantic -DHI_INTS \
-	   $(shell pkg-config dockapp --cflags) \
-	   $(shell pkg-config x11     --cflags) \
-	   $(shell pkg-config xext    --cflags) \
-	   $(shell pkg-config xpm     --cflags)
+	   $(shell $(PKG_CONFIG) dockapp --cflags) \
+	   $(shell $(PKG_CONFIG) x11     --cflags) \
+	   $(shell $(PKG_CONFIG) xext    --cflags) \
+	   $(shell $(PKG_CONFIG) xpm     --cflags)
 
-LIBS	+= $(shell pkg-config dockapp --libs) \
-	   $(shell pkg-config x11     --libs) \
-	   $(shell pkg-config xext    --libs) \
-	   $(shell pkg-config xpm     --libs) \
+LIBS	+= $(shell $(PKG_CONFIG) dockapp --libs) \
+	   $(shell $(PKG_CONFIG) x11     --libs) \
+	   $(shell $(PKG_CONFIG) xext    --libs) \
+	   $(shell $(PKG_CONFIG) xpm     --libs) \
 	   -lm
 
 PREFIX	= /usr
